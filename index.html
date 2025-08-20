@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Image Display</title>
+<style>
+  body, html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column; /* Arrange items vertically */
+    justify-content: center;
+    align-items: center;
+    background-color: #f0f0f0;
+  }
+  img {
+    max-width: 90%; /* Adjust to make space for buttons */
+    max-height: 80%; /* Adjust to make space for buttons */
+  }
+  .button-container {
+    display: flex;
+    flex-direction: column; /* Stack rows vertically */
+    align-items: center; /* Center rows */
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .button-row {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  .button {
+    min-width: 50px;
+    width: auto;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .button.clicked-button {
+    background-color: lightgray;
+  }
+</style>
+</head>
+<body>
+
+<img src="Road.png" alt="Centered Image" id="mainImage">
+
+<div class="button-container">
+  <div class="button-row">
+    <button class="button">1</button>
+    <button class="button">2</button>
+    <button class="button">3</button>
+    <button class="button">4</button>
+    <button class="button">5</button>
+    <button class="button">6</button>
+    <button class="button">7</button>
+    <button class="button">8</button>
+  </div>
+  <div class="button-row">
+    <button class="button">9</button>
+    <button class="button">10</button>
+    <button class="button">11</button>
+    <button class="button">12</button>
+    <button class="button">13</button>
+    <button class="button">14</button>
+    <button class="button">15</button>
+    <button class="button">16</button>
+  </div>
+  <div class="button-row">
+    <button class="button" id="showAllButton">显示整体</button>
+  </div>
+</div>
+
+<script>
+  const image = document.getElementById('mainImage');
+  const buttons = document.querySelectorAll('.button');
+
+  buttons.forEach(button => {
+    button.addEventListener('click', () => {
+      // Remove the 'clicked-button' class from all buttons
+      buttons.forEach(btn => btn.classList.remove('clicked-button'));
+
+      // Add the 'clicked-button' class to the clicked button
+      button.classList.add('clicked-button');
+
+      if (button.id === 'showAllButton') {
+        image.src = 'Road.png';
+      } else {
+        let buttonNumber = button.textContent;
+        let newImageSrc = `Road${buttonNumber.padStart(2, '0')}.png`;
+        image.src = newImageSrc;
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
