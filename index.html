@@ -288,6 +288,39 @@
                 transform-origin: center top;
                 min-width: 448px; /* (25px + 3px) * 16 - 3px */
                 margin: 0 auto;
+                /* 确保缩放不影响内部定位 */
+                position: relative;
+            }
+
+            /* 移动端圆圈容器修复 */
+            .cell {
+                position: relative;
+                /* 确保缩放时子元素定位准确 */
+                transform: translateZ(0);
+                -webkit-transform: translateZ(0);
+            }
+
+            /* 移动端圆圈定位修复 */
+            .circle {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) scale(1.25); /* 补偿网格缩放 */
+                border-radius: 50%;
+                width: 18px;
+                height: 18px;
+                pointer-events: none;
+                /* 确保在移动端正确居中 */
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            /* 针对Webkit浏览器的特殊处理 */
+            @supports (-webkit-touch-callout: none) {
+                .circle {
+                    transform: translate(-50%, -50%) scale(1.25);
+                    -webkit-transform: translate(-50%, -50%) scale(1.25);
+                }
             }
 
             /* 控制区域优化 */
@@ -873,6 +906,41 @@
         // 页面加载时优化移动端
         optimizeForMobile();
         window.addEventListener('resize', optimizeForMobile);
+        
+        // 修复移动端圆圈定位
+        function fixMobileCirclePositioning() {
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+                // 等待DOM完全加载后执行
+                setTimeout(() => {
+                    document.querySelectorAll('.circle').forEach(circle => {
+                        // 确保圆圈在缩放后仍然正确居中
+                        circle.style.transform = 'translate(-50%, -50%) scale(1.25)';
+                        circle.style.webkitTransform = 'translate(-50%, -50%) scale(1.25)';
+                        circle.style.mozTransform = 'translate(-50%, -50%) scale(1.25)';
+                        
+                        // 强制重绘以确保正确位置
+                        circle.style.display = 'none';
+                        circle.offsetHeight; // 触发重排
+                        circle.style.display = '';
+                    });
+                }, 100);
+            }
+        }
+        
+        // 在预设坐标加载后修复定位
+        const originalSetPredefinedCoordinates = setPredefinedCoordinates;
+        setPredefinedCoordinates = function() {
+            originalSetPredefinedCoordinates();
+            fixMobileCirclePositioning();
+        };
+        
+        // 在应用保存数据后修复定位
+        const originalApplySavedData = applySavedData;
+        applySavedData = function() {
+            originalApplySavedData();
+            fixMobileCirclePositioning();
+        };
     </script>
 
     <!-- 使用说明（粤语） -->
