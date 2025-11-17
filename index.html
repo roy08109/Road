@@ -282,45 +282,48 @@
                 -webkit-overflow-scrolling: touch;
             }
 
-            /* 网格响应式缩放 */
+            /* 移动端网格精确布局 - 使用Grid确保行独立性 */
             #grid {
-                transform: scale(0.8);
-                transform-origin: center top;
-                min-width: 448px; /* (25px + 3px) * 16 - 3px */
+                display: grid;
+                grid-template-columns: repeat(16, 20px); /* 缩小单元格尺寸 */
+                grid-template-rows: repeat(13, 20px); /* 精确行高定义 */
+                gap: 2.4px; /* 按比例缩小间距 */
+                background: #e0e0e0;
+                padding: 1.6px;
+                border: 1px solid #e0e0e0;
+                min-width: 378px; /* (20px + 2.4px) * 16 - 2.4px */
                 margin: 0 auto;
-                /* 确保缩放不影响内部定位 */
+                /* 移除transform缩放，避免行压缩 */
                 position: relative;
             }
 
-            /* 移动端圆圈容器修复 */
+            /* 移动端单元格尺寸调整 */
             .cell {
+                width: 20px;
+                height: 20px;
                 position: relative;
-                /* 确保缩放时子元素定位准确 */
-                transform: translateZ(0);
-                -webkit-transform: translateZ(0);
+                /* 确保行独立性 */
+                display: block;
             }
 
-            /* 移动端圆圈定位修复 */
+            /* 数字行样式调整 */
+            .cell.number-cell {
+                font-size: 11px;
+            }
+
+            /* 移动端圆圈尺寸和定位调整 */
             .circle {
                 position: absolute;
                 top: 50%;
                 left: 50%;
-                transform: translate(-50%, -50%) scale(1.25); /* 补偿网格缩放 */
+                transform: translate(-50%, -50%);
                 border-radius: 50%;
-                width: 18px;
-                height: 18px;
+                width: 14px;
+                height: 14px;
                 pointer-events: none;
-                /* 确保在移动端正确居中 */
+                /* 确保精确居中 */
                 margin: 0 !important;
                 padding: 0 !important;
-            }
-
-            /* 针对Webkit浏览器的特殊处理 */
-            @supports (-webkit-touch-callout: none) {
-                .circle {
-                    transform: translate(-50%, -50%) scale(1.25);
-                    -webkit-transform: translate(-50%, -50%) scale(1.25);
-                }
             }
 
             /* 控制区域优化 */
@@ -389,8 +392,25 @@
         /* 超小屏幕适配 */
         @media screen and (max-width: 480px) {
             #grid {
-                transform: scale(0.7);
-                min-width: 392px;
+                grid-template-columns: repeat(16, 17px); /* 更小单元格尺寸 */
+                grid-template-rows: repeat(13, 17px); /* 精确行高定义 */
+                gap: 2px; /* 按比例缩小间距 */
+                min-width: 322px; /* (17px + 2px) * 16 - 2px */
+                padding: 1.4px;
+            }
+
+            .cell {
+                width: 17px;
+                height: 17px;
+            }
+
+            .cell.number-cell {
+                font-size: 10px;
+            }
+
+            .circle {
+                width: 12px;
+                height: 12px;
             }
 
             .number-buttons {
@@ -428,7 +448,20 @@
         /* 横屏适配 */
         @media screen and (max-width: 768px) and (orientation: landscape) {
             #grid {
-                transform: scale(0.85);
+                grid-template-columns: repeat(16, 18px); /* 横屏时稍大尺寸 */
+                grid-template-rows: repeat(13, 18px); /* 精确行高定义 */
+                gap: 2.2px;
+                min-width: 343px; /* (18px + 2.2px) * 16 - 2.2px */
+            }
+
+            .cell {
+                width: 18px;
+                height: 18px;
+            }
+
+            .circle {
+                width: 13px;
+                height: 13px;
             }
 
             body {
@@ -906,41 +939,6 @@
         // 页面加载时优化移动端
         optimizeForMobile();
         window.addEventListener('resize', optimizeForMobile);
-        
-        // 修复移动端圆圈定位
-        function fixMobileCirclePositioning() {
-            const isMobile = window.innerWidth <= 768;
-            if (isMobile) {
-                // 等待DOM完全加载后执行
-                setTimeout(() => {
-                    document.querySelectorAll('.circle').forEach(circle => {
-                        // 确保圆圈在缩放后仍然正确居中
-                        circle.style.transform = 'translate(-50%, -50%) scale(1.25)';
-                        circle.style.webkitTransform = 'translate(-50%, -50%) scale(1.25)';
-                        circle.style.mozTransform = 'translate(-50%, -50%) scale(1.25)';
-                        
-                        // 强制重绘以确保正确位置
-                        circle.style.display = 'none';
-                        circle.offsetHeight; // 触发重排
-                        circle.style.display = '';
-                    });
-                }, 100);
-            }
-        }
-        
-        // 在预设坐标加载后修复定位
-        const originalSetPredefinedCoordinates = setPredefinedCoordinates;
-        setPredefinedCoordinates = function() {
-            originalSetPredefinedCoordinates();
-            fixMobileCirclePositioning();
-        };
-        
-        // 在应用保存数据后修复定位
-        const originalApplySavedData = applySavedData;
-        applySavedData = function() {
-            originalApplySavedData();
-            fixMobileCirclePositioning();
-        };
     </script>
 
     <!-- 使用说明（粤语） -->
