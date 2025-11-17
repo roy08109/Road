@@ -129,6 +129,8 @@
             display: none;
             margin-bottom: 20px;
             text-align: center;
+            position: relative;
+            z-index: 10;
         }
 
         .tool-buttons {
@@ -169,6 +171,9 @@
             cursor: pointer;
             font-size: 14px;
             transition: all 0.2s;
+            position: relative;
+            z-index: 1;
+            pointer-events: auto;
         }
 
         #saveBtn {
@@ -245,6 +250,45 @@
             font-size: 12px;
             color: #666;
         }
+        
+        /* 按钮状态 */
+        .action-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .action-btn.loading {
+            position: relative;
+            color: transparent;
+        }
+        
+        .action-btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spinner 0.8s linear infinite;
+        }
+        
+        @keyframes spinner {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        /* 确保按钮可点击 */
+        .action-btn {
+            pointer-events: auto;
+            z-index: 1;
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -267,6 +311,22 @@
         </div>
         <div class="action-buttons">
             <button class="action-btn" id="saveBtn">确定保存</button>
+        </div>
+        
+        <!-- 数据导出导入区域 -->
+        <div style="margin-top: 15px; text-align: center;">
+            <button class="action-btn" id="exportBtn" style="background: #1890ff; margin-right: 10px;">导出数据</button>
+            <button class="action-btn" id="importBtn" style="background: #52c41a;">导入数据</button>
+        </div>
+        
+        <!-- 导入数据输入区域 -->
+        <div id="importArea" style="margin-top: 10px; display: none; position: relative; z-index: 20;">
+            <textarea id="importData" placeholder="请粘贴导出的数据..." style="width: 300px; height: 100px; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px; font-family: monospace; font-size: 12px; resize: vertical;"></textarea>
+            <div style="margin-top: 8px;">
+                <button id="confirmImport" style="padding: 6px 12px; background: #52c41a; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px; position: relative; z-index: 1;">确认导入</button>
+                <button id="cancelImport" style="padding: 6px 12px; background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 4px; cursor: pointer; position: relative; z-index: 1;">取消</button>
+            </div>
+            <div id="importError" style="color: #ff3333; font-size: 12px; margin-top: 5px; min-height: 16px;"></div>
         </div>
     </div>
 
@@ -323,6 +383,7 @@
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             initializeGrid();
+            applyPresetCoordinates(); // 应用预设坐标
             loadFromLocalStorage();
             setupEventListeners();
         });
@@ -350,6 +411,123 @@
             }
         }
         
+        // 预设坐标配置（按 "第 X 行第 Y 列 = 颜色" 格式）
+        function getPresetCoordinates() {
+            const presets = {};
+            
+            // 第 1 行：1-8 列 = 红圈，9-16 列 = 蓝圈
+            for (let col = 0; col < 8; col++) presets[`0-${col}`] = 'red';
+            for (let col = 8; col < 16; col++) presets[`0-${col}`] = 'blue';
+            
+            // 第 2 行：1-4 列 = 红圈，5-11 列 = 蓝圈，12-16 列 = 红圈
+            for (let col = 0; col < 4; col++) presets[`1-${col}`] = 'red';
+            for (let col = 4; col < 11; col++) presets[`1-${col}`] = 'blue';
+            for (let col = 11; col < 16; col++) presets[`1-${col}`] = 'red';
+            
+            // 第 3 行：1-2 列 = 红圈，3-6 列 = 蓝圈，7-8 列 = 红圈，9-10 列 = 蓝圈，11-14 列 = 红圈，15-16 列 = 蓝圈
+            for (let col = 0; col < 2; col++) presets[`2-${col}`] = 'red';
+            for (let col = 2; col < 6; col++) presets[`2-${col}`] = 'blue';
+            for (let col = 6; col < 8; col++) presets[`2-${col}`] = 'red';
+            for (let col = 8; col < 10; col++) presets[`2-${col}`] = 'blue';
+            for (let col = 10; col < 14; col++) presets[`2-${col}`] = 'red';
+            for (let col = 14; col < 16; col++) presets[`2-${col}`] = 'blue';
+            
+            // 第 4 行：1 列 = 红圈，2 列 = 蓝圈，3 列 = 红圈，4-5 列 = 蓝圈，6-7 列 = 红圈，8-9 列 = 蓝圈，10 列 = 红圈，11 列 = 蓝圈，12-13 列 = 红圈，14-15 列 = 蓝圈，16 列 = 红圈
+            presets[`3-0`] = 'red';
+            presets[`3-1`] = 'blue';
+            presets[`3-2`] = 'red';
+            for (let col = 3; col < 5; col++) presets[`3-${col}`] = 'blue';
+            for (let col = 5; col < 7; col++) presets[`3-${col}`] = 'red';
+            for (let col = 7; col < 9; col++) presets[`3-${col}`] = 'blue';
+            presets[`3-9`] = 'red';
+            presets[`3-10`] = 'blue';
+            for (let col = 11; col < 13; col++) presets[`3-${col}`] = 'red';
+            for (let col = 13; col < 15; col++) presets[`3-${col}`] = 'blue';
+            presets[`3-15`] = 'red';
+            
+            // 第 7 行：1-4 列 = 红圈，5 列 = 蓝圈，6-8 列 = 红圈，9-12 列 = 蓝圈，13 列 = 红圈，14-16 列 = 蓝圈
+            for (let col = 0; col < 4; col++) presets[`6-${col}`] = 'red';
+            presets[`6-4`] = 'blue';
+            for (let col = 5; col < 8; col++) presets[`6-${col}`] = 'red';
+            for (let col = 8; col < 12; col++) presets[`6-${col}`] = 'blue';
+            presets[`6-12`] = 'red';
+            for (let col = 13; col < 16; col++) presets[`6-${col}`] = 'blue';
+            
+            // 第 8 行：1-3 列 = 红圈，4-5 列 = 蓝圈，6-8 列 = 红圈，9-10 列 = 蓝圈，11-14 列 = 红圈，15-16 列 = 蓝圈
+            for (let col = 0; col < 3; col++) presets[`7-${col}`] = 'red';
+            for (let col = 3; col < 5; col++) presets[`7-${col}`] = 'blue';
+            for (let col = 5; col < 8; col++) presets[`7-${col}`] = 'red';
+            for (let col = 8; col < 10; col++) presets[`7-${col}`] = 'blue';
+            for (let col = 10; col < 14; col++) presets[`7-${col}`] = 'red';
+            for (let col = 14; col < 16; col++) presets[`7-${col}`] = 'blue';
+            
+            // 第 9 行：1-3 列 = 蓝圈，4-5 列 = 红圈，6 列 = 蓝圈，7-8 列 = 蓝圈，9-10 列 = 红圈，11 列 = 蓝圈，12-13 列 = 蓝圈，14-16 列 = 红圈
+            for (let col = 0; col < 3; col++) presets[`8-${col}`] = 'blue';
+            for (let col = 3; col < 5; col++) presets[`8-${col}`] = 'red';
+            presets[`8-5`] = 'blue';
+            for (let col = 6; col < 8; col++) presets[`8-${col}`] = 'blue';
+            for (let col = 8; col < 10; col++) presets[`8-${col}`] = 'red';
+            presets[`8-10`] = 'blue';
+            for (let col = 11; col < 13; col++) presets[`8-${col}`] = 'blue';
+            for (let col = 13; col < 16; col++) presets[`8-${col}`] = 'red';
+            
+            // 第 10 行：1 列 = 红圈，2 列 = 红圈，3 列 = 蓝圈，4 列 = 红圈，5 列 = 蓝圈，6-7 列 = 蓝圈，8-9 列 = 红圈，10-12 列 = 蓝圈，13-14 列 = 红圈，15-16 列 = 蓝圈
+            presets[`9-0`] = 'red';
+            presets[`9-1`] = 'red';
+            presets[`9-2`] = 'blue';
+            presets[`9-3`] = 'red';
+            presets[`9-4`] = 'blue';
+            for (let col = 5; col < 7; col++) presets[`9-${col}`] = 'blue';
+            for (let col = 7; col < 9; col++) presets[`9-${col}`] = 'red';
+            for (let col = 9; col < 12; col++) presets[`9-${col}`] = 'blue';
+            for (let col = 12; col < 14; col++) presets[`9-${col}`] = 'red';
+            for (let col = 14; col < 16; col++) presets[`9-${col}`] = 'blue';
+            
+            // 第 11 行：1 列 = 红圈，2 列 = 蓝圈，3 列 = 红圈，4 列 = 蓝圈，5 列 = 红圈，6 列 = 蓝圈，7-9 列 = 红圈，10 列 = 蓝圈，11 列 = 红圈，12-14 列 = 蓝圈，15-16 列 = 蓝圈
+            presets[`10-0`] = 'red';
+            presets[`10-1`] = 'blue';
+            presets[`10-2`] = 'red';
+            presets[`10-3`] = 'blue';
+            presets[`10-4`] = 'red';
+            presets[`10-5`] = 'blue';
+            for (let col = 6; col < 9; col++) presets[`10-${col}`] = 'red';
+            presets[`10-9`] = 'blue';
+            presets[`10-10`] = 'red';
+            for (let col = 11; col < 14; col++) presets[`10-${col}`] = 'blue';
+            for (let col = 14; col < 16; col++) presets[`10-${col}`] = 'blue';
+            
+            // 第 12 行：1 列 = 红圈，2-8 列 = 蓝圈，9 列 = 红圈，10 列 = 蓝圈，11-15 列 = 红圈，16 列 = 蓝圈
+            presets[`11-0`] = 'red';
+            for (let col = 1; col < 8; col++) presets[`11-${col}`] = 'blue';
+            presets[`11-8`] = 'red';
+            presets[`11-9`] = 'blue';
+            for (let col = 10; col < 15; col++) presets[`11-${col}`] = 'red';
+            presets[`11-15`] = 'blue';
+            
+            return presets;
+        }
+        
+        // 应用预设坐标
+        function applyPresetCoordinates() {
+            const presets = getPresetCoordinates();
+            
+            Object.keys(presets).forEach(key => {
+                const [row, col] = key.split('-').map(Number);
+                const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                
+                if (cell && !cell.classList.contains('number-cell')) {
+                    const circle = document.createElement('div');
+                    circle.className = `circle ${presets[key]}`;
+                    cell.appendChild(circle);
+                    
+                    // 保存到网格数据
+                    gridData[key] = presets[key];
+                }
+            });
+            
+            updateColumnVisibility();
+        }
+        
         // 设置事件监听器
         function setupEventListeners() {
             // 密码验证
@@ -367,6 +545,32 @@
             
             // 操作按钮
             document.getElementById('saveBtn').addEventListener('click', saveToLocalStorage);
+            
+            // 导出导入按钮 - 使用更可靠的事件绑定
+            const exportBtn = document.getElementById('exportBtn');
+            const importBtn = document.getElementById('importBtn');
+            const confirmImportBtn = document.getElementById('confirmImport');
+            const cancelImportBtn = document.getElementById('cancelImport');
+            
+            if (exportBtn) {
+                exportBtn.addEventListener('click', exportData);
+                exportBtn.style.pointerEvents = 'auto';
+            }
+            
+            if (importBtn) {
+                importBtn.addEventListener('click', importData);
+                importBtn.style.pointerEvents = 'auto';
+            }
+            
+            if (confirmImportBtn) {
+                confirmImportBtn.addEventListener('click', importData);
+                confirmImportBtn.style.pointerEvents = 'auto';
+            }
+            
+            if (cancelImportBtn) {
+                cancelImportBtn.addEventListener('click', cancelImport);
+                cancelImportBtn.style.pointerEvents = 'auto';
+            }
             
             // 数字按钮
             document.querySelectorAll('.number-btn').forEach(btn => {
@@ -386,6 +590,17 @@
             // 防止拖拽选择文本
             document.getElementById('grid').addEventListener('selectstart', function(e) {
                 e.preventDefault();
+            });
+            
+            // 添加键盘事件支持
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    // ESC键取消导入
+                    const importArea = document.getElementById('importArea');
+                    if (importArea && importArea.style.display !== 'none') {
+                        cancelImport();
+                    }
+                }
             });
         }
         
@@ -516,6 +731,203 @@
             showStatus('数据已保存到本地存储');
         }
         
+        // 导出数据
+        function exportData() {
+            const exportBtn = document.getElementById('exportBtn');
+            const originalText = exportBtn.textContent;
+            
+            try {
+                // 显示加载状态
+                exportBtn.classList.add('loading');
+                exportBtn.disabled = true;
+                
+                const exportObj = {
+                    version: '1.0',
+                    timestamp: new Date().toISOString(),
+                    gridData: gridData,
+                    totalCircles: Object.keys(gridData).length
+                };
+                
+                const exportText = JSON.stringify(exportObj, null, 2);
+                
+                // 使用现代剪贴板API
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(exportText).then(() => {
+                        showStatus('数据已导出并复制到剪贴板');
+                        exportBtn.classList.remove('loading');
+                        exportBtn.disabled = false;
+                    }).catch(() => {
+                        // 如果现代API失败，使用备用方法
+                        fallbackCopyToClipboard(exportText, exportBtn, originalText);
+                    });
+                } else {
+                    // 使用传统方法
+                    fallbackCopyToClipboard(exportText, exportBtn, originalText);
+                }
+                
+            } catch (error) {
+                showStatus('导出失败：' + error.message);
+                exportBtn.classList.remove('loading');
+                exportBtn.disabled = false;
+            }
+        }
+        
+        // 备用复制方法
+        function fallbackCopyToClipboard(text, button, originalText) {
+            try {
+                // 创建临时文本区域用于复制
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                textarea.style.pointerEvents = 'none';
+                document.body.appendChild(textarea);
+                textarea.select();
+                
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                
+                if (successful) {
+                    showStatus('数据已导出并复制到剪贴板');
+                } else {
+                    // 如果复制失败，显示文本供手动复制
+                    showExportDialog(text);
+                }
+                
+                button.classList.remove('loading');
+                button.disabled = false;
+                
+            } catch (err) {
+                // 如果复制失败，显示文本供手动复制
+                showExportDialog(text);
+                button.classList.remove('loading');
+                button.disabled = false;
+            }
+        }
+        
+        // 显示导出对话框
+        function showExportDialog(text) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                max-width: 500px;
+                max-height: 400px;
+                overflow: auto;
+            `;
+            
+            content.innerHTML = `
+                <h3>导出数据</h3>
+                <p>请复制以下文本：</p>
+                <textarea readonly style="width: 100%; height: 200px; font-family: monospace; font-size: 12px; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">${text}</textarea>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button onclick="this.closest('.export-modal').remove()" style="padding: 8px 16px; background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 4px; cursor: pointer;">关闭</button>
+                </div>
+            `;
+            
+            modal.className = 'export-modal';
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+        }
+        
+        // 导入数据
+        function importData() {
+            const importBtn = document.getElementById('importBtn');
+            const importArea = document.getElementById('importArea');
+            const importDataTextarea = document.getElementById('importData');
+            const importError = document.getElementById('importError');
+            
+            if (importArea.style.display === 'none') {
+                // 显示导入区域
+                importArea.style.display = 'block';
+                importDataTextarea.focus();
+                importBtn.textContent = '确认导入';
+            } else {
+                // 执行导入操作
+                const originalText = importBtn.textContent;
+                
+                try {
+                    // 显示加载状态
+                    importBtn.classList.add('loading');
+                    importBtn.disabled = true;
+                    
+                    const importText = importDataTextarea.value.trim();
+                    if (!importText) {
+                        throw new Error('请输入要导入的数据');
+                    }
+                    
+                    let importObj;
+                    try {
+                        importObj = JSON.parse(importText);
+                    } catch (parseError) {
+                        throw new Error('数据格式错误，请重新粘贴');
+                    }
+                    
+                    // 验证数据格式
+                    if (!importObj.gridData || typeof importObj.gridData !== 'object') {
+                        throw new Error('无效的数据格式');
+                    }
+                    
+                    // 确认导入
+                    if (confirm(`确定要导入数据吗？这将覆盖当前所有圈形状态。\n共 ${Object.keys(importObj.gridData).length} 个圈形。`)) {
+                        // 清空当前状态
+                        document.querySelectorAll('.circle').forEach(circle => {
+                            circle.remove();
+                        });
+                        
+                        // 应用导入的数据
+                        gridData = importObj.gridData;
+                        applySavedData();
+                        
+                        // 隐藏导入区域并重置按钮
+                        importArea.style.display = 'none';
+                        importDataTextarea.value = '';
+                        importError.textContent = '';
+                        importBtn.classList.remove('loading');
+                        
+                        showStatus('数据导入成功');
+                        
+                        // 保存到本地存储
+                        localStorage.setItem('gridData', JSON.stringify(gridData));
+                    }
+                    
+                } catch (error) {
+                    importError.textContent = error.message;
+                    showStatus('导入失败：' + error.message);
+                } finally {
+                    importBtn.classList.remove('loading');
+                    importBtn.disabled = false;
+                }
+            }
+        }
+        
+        // 取消导入
+        function cancelImport() {
+            const importBtn = document.getElementById('importBtn');
+            document.getElementById('importArea').style.display = 'none';
+            document.getElementById('importData').value = '';
+            document.getElementById('importError').textContent = '';
+            
+            // 重置按钮状态
+            importBtn.classList.remove('loading');
+            importBtn.disabled = false;
+        }
+        
         // 从本地存储加载
         function loadFromLocalStorage() {
             const saved = localStorage.getItem('gridData');
@@ -567,7 +979,7 @@
     2. 列显示/隐藏：点击底部数字按钮显示对应列，点击"显示全部"显示所有列
     3. 圈形设置：选择红圈/蓝圈/清空工具，点击或拖动网格设置圈形
     4. 保存加载：点击"确定保存"保存数据，下次打开自动加载
-    5. 重置功能：点击"重置所有"清空所有圈形和保存数据
+    5. 预设坐标：已按指定格式设置好红蓝圈坐标
     
     修改说明：
     - 管理员密码：修改ADMIN_PASSWORD变量
