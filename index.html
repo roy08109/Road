@@ -2,6 +2,7 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>高级网格管理系统</title>
     <style>
         /* 基础样式 */
@@ -244,6 +245,162 @@
             margin-top: 15px;
             font-size: 12px;
             color: #666;
+        }
+
+        /* 移动端响应式适配 */
+        @media screen and (max-width: 768px) {
+            /* 基础布局调整 */
+            body {
+                padding: 10px;
+                min-height: 100vh;
+                overflow-x: hidden;
+            }
+
+            /* 密码验证区域优化 */
+            #passwordSection {
+                margin-bottom: 15px;
+                padding: 0 10px;
+            }
+
+            #passwordInput {
+                width: 120px;
+                margin-right: 5px;
+                font-size: 13px;
+            }
+
+            #passwordBtn {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+
+            /* 网格容器响应式 */
+            #gridContainer {
+                margin: 15px 0;
+                display: flex;
+                justify-content: center;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* 网格响应式缩放 */
+            #grid {
+                transform: scale(0.8);
+                transform-origin: center top;
+                min-width: 448px; /* (25px + 3px) * 16 - 3px */
+                margin: 0 auto;
+            }
+
+            /* 控制区域优化 */
+            #controls {
+                margin-bottom: 15px;
+            }
+
+            .tool-buttons {
+                gap: 6px;
+                margin-bottom: 10px;
+                flex-wrap: wrap;
+            }
+
+            .tool-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+                min-width: 70px;
+            }
+
+            .action-buttons {
+                margin-top: 5px;
+            }
+
+            .action-btn {
+                padding: 8px 16px;
+                font-size: 12px;
+            }
+
+            /* 底部按钮区域优化 */
+            #bottomButtons {
+                margin-top: 15px;
+                padding: 0 5px;
+            }
+
+            .number-buttons {
+                gap: 4px;
+                margin-bottom: 10px;
+                max-width: 320px;
+            }
+
+            .number-btn {
+                width: 35px;
+                height: 35px;
+                font-size: 12px;
+            }
+
+            #showAllBtn {
+                padding: 8px 24px;
+                font-size: 14px;
+                margin-top: 10px;
+            }
+
+            /* 标题优化 */
+            h1, h2 {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+
+            /* 状态提示优化 */
+            #status {
+                font-size: 11px;
+                margin-top: 10px;
+            }
+        }
+
+        /* 超小屏幕适配 */
+        @media screen and (max-width: 480px) {
+            #grid {
+                transform: scale(0.7);
+                min-width: 392px;
+            }
+
+            .number-buttons {
+                max-width: 280px;
+            }
+
+            .number-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 11px;
+            }
+
+            .tool-btn {
+                min-width: 60px;
+                padding: 5px 8px;
+            }
+        }
+
+        /* 触摸优化 */
+        @media (hover: none) and (pointer: coarse) {
+            .cell:hover {
+                background-color: #ffffff;
+            }
+
+            .cell:active {
+                background-color: #f0f0f0;
+            }
+
+            .tool-btn:active,
+            .number-btn:active {
+                transform: scale(0.95);
+            }
+        }
+
+        /* 横屏适配 */
+        @media screen and (max-width: 768px) and (orientation: landscape) {
+            #grid {
+                transform: scale(0.85);
+            }
+
+            body {
+                padding: 5px 10px;
+            }
         }
     </style>
 </head>
@@ -658,6 +815,64 @@
         
         // 默认选中红圈工具
         setTool('red');
+        
+        // 移动端触摸优化
+        function optimizeForMobile() {
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile) {
+                // 优化触摸事件
+                let touchStartX, touchStartY;
+                
+                document.getElementById('grid').addEventListener('touchstart', function(e) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    
+                    // 获取触摸位置的元素
+                    const element = document.elementFromPoint(touchStartX, touchStartY);
+                    if (element && element.classList.contains('cell') && !element.classList.contains('number-cell')) {
+                        isDragging = true;
+                        applyToolToCell(element);
+                    }
+                }, { passive: true });
+                
+                document.getElementById('grid').addEventListener('touchmove', function(e) {
+                    if (!isDragging) return;
+                    
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                    
+                    if (element && element.classList.contains('cell') && !element.classList.contains('number-cell')) {
+                        applyToolToCell(element);
+                    }
+                }, { passive: false });
+                
+                document.addEventListener('touchend', function() {
+                    isDragging = false;
+                }, { passive: true });
+                
+                // 防止页面缩放
+                document.addEventListener('gesturestart', function(e) {
+                    e.preventDefault();
+                }, { passive: false });
+                
+                // 优化按钮触摸反馈
+                document.querySelectorAll('.tool-btn, .number-btn, .action-btn').forEach(btn => {
+                    btn.addEventListener('touchstart', function() {
+                        this.style.transform = 'scale(0.95)';
+                    }, { passive: true });
+                    
+                    btn.addEventListener('touchend', function() {
+                        this.style.transform = '';
+                    }, { passive: true });
+                });
+            }
+        }
+        
+        // 页面加载时优化移动端
+        optimizeForMobile();
+        window.addEventListener('resize', optimizeForMobile);
     </script>
 
     <!-- 使用说明（粤语） -->
