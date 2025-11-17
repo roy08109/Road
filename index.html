@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>高级网格管理系统</title>
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        /* 密码验证区域 */
+        #passwordSection {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #passwordInput {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        #passwordBtn {
+            padding: 8px 16px;
+            background: #3366ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #passwordBtn:hover {
+            background: #2952cc;
+        }
+
+        #passwordError {
+            color: #ff3333;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        /* 网格样式 */
+        #gridContainer {
+            margin: 20px 0;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(16, 25px);
+            grid-template-rows: repeat(13, 25px);
+            gap: 3px;
+            background: #e0e0e0;
+            padding: 2px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .cell {
+            width: 25px;
+            height: 25px;
+            background: #ffffff;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .cell:hover {
+            background-color: #f5f5f5;
+        }
+
+        .cell.number-cell {
+            background: #f0f0f0;
+            cursor: default;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: #333333;
+        }
+
+        .cell.number-cell:hover {
+            background: #f0f0f0;
+        }
+
+        /* 圈形样式 */
+        .circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            pointer-events: none;
+        }
+
+        .circle.red {
+            background: #fe0002;
+            border: 1px solid #000000;
+        }
+
+        .circle.blue {
+            background: #0000fe;
+            border: 1px solid #000000;
+        }
+
+        .circle.hidden {
+            display: none;
+        }
+
+        /* 控制区域 */
+        #controls {
+            display: none;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .tool-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .tool-btn {
+            padding: 8px 16px;
+            border: 1px solid #e0e0e0;
+            background: #ffffff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .tool-btn.active {
+            background: #e6f7ff;
+            border-color: #3366ff;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+        }
+
+        .action-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        #saveBtn {
+            background: #52c41a;
+            color: white;
+        }
+
+        #saveBtn:hover {
+            background: #45a612;
+        }
+
+        /* 底部按钮区域 */
+        #bottomButtons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .number-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .number-btn {
+            flex: 1;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .number-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .number-btn.active {
+            background: #e6f7ff;
+            border-color: #3366ff;
+        }
+
+        #showAllBtn {
+            background: #3366ff;
+            color: white;
+            padding: 10px 40px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 15px;
+        }
+
+        #showAllBtn:hover {
+            background: #2952cc;
+        }
+
+        /* 状态提示 */
+        #status {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <!-- 密码验证区域 -->
+    <div id="passwordSection">
+        <h2>管理员登录</h2>
+        <div style="margin-top: 10px;">
+            <input type="password" id="passwordInput" placeholder="请输入管理员密码">
+            <button id="passwordBtn">验证</button>
+        </div>
+        <div id="passwordError"></div>
+    </div>
+
+    <!-- 控制区域（初始隐藏） -->
+    <div id="controls">
+        <div class="tool-buttons">
+            <button class="tool-btn" id="redTool" data-tool="red">红圈选择</button>
+            <button class="tool-btn" id="blueTool" data-tool="blue">蓝圈选择</button>
+            <button class="tool-btn" id="clearTool" data-tool="clear">清空选择</button>
+        </div>
+        <div class="action-buttons">
+            <button class="action-btn" id="saveBtn">确定保存</button>
+        </div>
+    </div>
+
+    <!-- 网格容器 -->
+    <div id="gridContainer">
+        <div id="grid"></div>
+    </div>
+
+    <!-- 底部按钮区域 -->
+    <div id="bottomButtons">
+        <div class="number-buttons">
+            <button class="number-btn" data-col="1">1</button>
+            <button class="number-btn" data-col="2">2</button>
+            <button class="number-btn" data-col="3">3</button>
+            <button class="number-btn" data-col="4">4</button>
+            <button class="number-btn" data-col="5">5</button>
+            <button class="number-btn" data-col="6">6</button>
+            <button class="number-btn" data-col="7">7</button>
+            <button class="number-btn" data-col="8">8</button>
+        </div>
+        <div class="number-buttons">
+            <button class="number-btn" data-col="9">9</button>
+            <button class="number-btn" data-col="10">10</button>
+            <button class="number-btn" data-col="11">11</button>
+            <button class="number-btn" data-col="12">12</button>
+            <button class="number-btn" data-col="13">13</button>
+            <button class="number-btn" data-col="14">14</button>
+            <button class="number-btn" data-col="15">15</button>
+            <button class="number-btn" data-col="16">16</button>
+        </div>
+        <button id="showAllBtn">显示全部</button>
+    </div>
+
+    <!-- 状态提示 -->
+    <div id="status"></div>
+
+    <script>
+        // 管理员密码配置（可修改）
+        const ADMIN_PASSWORD = '8888'; // 修改此处可更改管理员密码
+        
+        // 全局变量
+        let isAdmin = false;
+        let currentTool = 'red';
+        let isDragging = false;
+        let currentColumn = null;
+        
+        const rows = 13;
+        const cols = 16;
+        const numberRow = 6; // 第6行是数字行（0索引为5）
+        
+        // 网格数据存储
+        let gridData = {};
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeGrid();
+            loadFromLocalStorage();
+            setupEventListeners();
+        });
+        
+        // 初始化网格
+        function initializeGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    // 第6行是数字行（索引5）
+                    if (row === numberRow - 1) {
+                        cell.classList.add('number-cell');
+                        cell.textContent = col + 1;
+                    }
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+        
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 密码验证
+            document.getElementById('passwordBtn').addEventListener('click', verifyPassword);
+            document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') verifyPassword();
+            });
+            
+            // 工具按钮
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    setTool(this.dataset.tool);
+                });
+            });
+            
+            // 操作按钮
+            document.getElementById('saveBtn').addEventListener('click', saveToLocalStorage);
+            
+            // 数字按钮
+            document.querySelectorAll('.number-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    showColumnOnly(Number(this.dataset.col));
+                });
+            });
+            
+            // 显示全部按钮
+            document.getElementById('showAllBtn').addEventListener('click', showAllColumns);
+            
+            // 网格事件（使用事件委托）
+            document.getElementById('grid').addEventListener('mousedown', handleCellMouseDown);
+            document.getElementById('grid').addEventListener('mouseover', handleCellMouseOver);
+            document.addEventListener('mouseup', handleMouseUp);
+            
+            // 防止拖拽选择文本
+            document.getElementById('grid').addEventListener('selectstart', function(e) {
+                e.preventDefault();
+            });
+        }
+        
+        // 验证密码
+        function verifyPassword() {
+            const input = document.getElementById('passwordInput').value;
+            const errorDiv = document.getElementById('passwordError');
+            
+            if (input === ADMIN_PASSWORD) {
+                isAdmin = true;
+                document.getElementById('passwordSection').style.display = 'none';
+                document.getElementById('controls').style.display = 'block';
+                document.getElementById('passwordInput').disabled = true;
+                errorDiv.textContent = '';
+                showStatus('管理员验证成功，可以开始操作');
+            } else {
+                errorDiv.textContent = '密码错误，请重试';
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+        
+        // 设置工具
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tool === tool);
+            });
+            showStatus(`当前工具：${tool === 'red' ? '红圈' : tool === 'blue' ? '蓝圈' : '清空'}`);
+        }
+        
+        // 处理单元格鼠标按下
+        function handleCellMouseDown(e) {
+            if (!isAdmin) return;
+            
+            const cell = e.target;
+            if (!cell.classList.contains('cell') || cell.classList.contains('number-cell')) return;
+            
+            isDragging = true;
+            applyToolToCell(cell);
+            e.preventDefault();
+        }
+        
+        // 处理单元格鼠标悬停
+        function handleCellMouseOver(e) {
+            if (!isAdmin || !isDragging) return;
+            
+            const cell = e.target;
+            if (!cell.classList.contains('cell') || cell.classList.contains('number-cell')) return;
+            
+            applyToolToCell(cell);
+        }
+        
+        // 处理鼠标释放
+        function handleMouseUp() {
+            isDragging = false;
+        }
+        
+        // 应用工具到单元格
+        function applyToolToCell(cell) {
+            const row = cell.dataset.row;
+            const col = cell.dataset.col;
+            const key = `${row}-${col}`;
+            
+            // 移除现有圈形
+            const existingCircle = cell.querySelector('.circle');
+            if (existingCircle) {
+                existingCircle.remove();
+            }
+            
+            if (currentTool === 'clear') {
+                delete gridData[key];
+            } else {
+                // 创建新圈形
+                const circle = document.createElement('div');
+                circle.className = `circle ${currentTool}`;
+                cell.appendChild(circle);
+                
+                // 保存数据
+                gridData[key] = currentTool;
+            }
+            
+            updateColumnVisibility();
+        }
+        
+        // 仅显示指定列
+        function showColumnOnly(col) {
+            currentColumn = col;
+            updateColumnVisibility();
+            
+            // 更新按钮状态
+            document.querySelectorAll('.number-btn').forEach(btn => {
+                btn.classList.toggle('active', Number(btn.dataset.col) === col);
+            });
+        }
+        
+        // 显示所有列
+        function showAllColumns() {
+            currentColumn = null;
+            updateColumnVisibility();
+            
+            // 清除按钮激活状态
+            document.querySelectorAll('.number-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+        }
+        
+        // 更新列可见性
+        function updateColumnVisibility() {
+            document.querySelectorAll('.cell').forEach(cell => {
+                if (cell.classList.contains('number-cell')) return;
+                
+                const col = Number(cell.dataset.col) + 1; // 转换为1索引
+                const circle = cell.querySelector('.circle');
+                
+                if (circle) {
+                    if (currentColumn === null || currentColumn === col) {
+                        circle.classList.remove('hidden');
+                    } else {
+                        circle.classList.add('hidden');
+                    }
+                }
+            });
+        }
+        
+        // 保存到本地存储
+        function saveToLocalStorage() {
+            localStorage.setItem('gridData', JSON.stringify(gridData));
+            showStatus('数据已保存到本地存储');
+        }
+        
+        // 从本地存储加载
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('gridData');
+            if (saved) {
+                try {
+                    gridData = JSON.parse(saved);
+                    applySavedData();
+                    showStatus('已加载保存的数据');
+                } catch (e) {
+                    console.error('加载数据失败:', e);
+                    gridData = {};
+                }
+            }
+        }
+        
+        // 应用保存的数据
+        function applySavedData() {
+            Object.keys(gridData).forEach(key => {
+                const [row, col] = key.split('-').map(Number);
+                const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                
+                if (cell && !cell.classList.contains('number-cell')) {
+                    const circle = document.createElement('div');
+                    circle.className = `circle ${gridData[key]}`;
+                    cell.appendChild(circle);
+                }
+            });
+            
+            updateColumnVisibility();
+        }
+        
+        // 显示状态信息
+        function showStatus(message) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            setTimeout(() => {
+                statusDiv.textContent = '';
+            }, 3000);
+        }
+        
+        // 默认选中红圈工具
+        setTool('red');
+    </script>
+
+    <!-- 使用说明（粤语） -->
+    <!-- 
+    使用说明：
+    1. 密码验证：输入管理员密码（默认8888）解锁操作功能
+    2. 列显示/隐藏：点击底部数字按钮显示对应列，点击"显示全部"显示所有列
+    3. 圈形设置：选择红圈/蓝圈/清空工具，点击或拖动网格设置圈形
+    4. 保存加载：点击"确定保存"保存数据，下次打开自动加载
+    5. 重置功能：点击"重置所有"清空所有圈形和保存数据
+    
+    修改说明：
+    - 管理员密码：修改ADMIN_PASSWORD变量
+    - 圈形颜色：修改.circle.red和.circle.blue的background属性
+    - 网格大小：修改rows、cols、cell尺寸相关CSS
+    - 按钮样式：修改对应按钮的CSS类
+    -->
+</body>
+</html>
